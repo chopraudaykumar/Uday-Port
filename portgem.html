@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uday Kumar Chopra - Elegant Portfolio</title>
+    <!-- Load Tailwind CSS --><script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Lucide Icons --><script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Load Three.js for 3D CGI Element --><script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        /* Configure Tailwind to use the Inter font family */
+        :root {
+            --font-inter: 'Inter', sans-serif;
+        }
+        body {
+            font-family: var(--font-inter);
+            overflow-x: hidden; /* Prevent horizontal scrolling */
+            background-color: #0A0A1F; /* Dark background */
+            color: #E0E0F0; /* Light text */
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Glassmorphism effect */
+        .glassmorphic {
+            background: rgba(255, 255, 255, 0.08); /* Semi-transparent white */
+            backdrop-filter: blur(10px); /* Blur effect */
+            -webkit-backdrop-filter: blur(10px); /* Safari support */
+            border: 1px solid rgba(255, 255, 255, 0.18); /* Subtle border */
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); /* Soft shadow */
+        }
+
+        /* Gradient Button */
+        .gradient-button {
+            background: linear-gradient(135deg, #6A11CB 0%, #2575FC 100%); /* Purple to Blue */
+            box-shadow: 0 4px 15px rgba(37, 117, 252, 0.4);
+            transition: all 0.3s ease-in-out;
+        }
+        .gradient-button:hover {
+            background: linear-gradient(135deg, #7B11DA 0%, #3A85FF 100%);
+            box-shadow: 0 6px 20px rgba(37, 117, 252, 0.6);
+            transform: translateY(-2px) scale(1.02);
+        }
+
+        /* Gradient Text */
+        .gradient-text {
+            background: linear-gradient(45deg, #A855F7, #EC4899); /* Purple to Pink */
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            color: transparent; /* Fallback for unsupported browsers */
+        }
+
+        /* Styling for the 3D Canvas Background */
+        #threeCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+        }
+        .hero-content {
+            position: relative;
+            z-index: 20; /* Ensure content is above the canvas */
+        }
+        
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary-dark': '#0A0A1F', /* Deep dark blue */
+                        'text-light': '#E0E0F0', /* Off-white for text */
+                        'accent-purple': '#A855F7', /* Vibrant Purple */
+                        'accent-blue': '#2575FC', /* Vibrant Blue */
+                        'accent-pink': '#EC4899', /* Vibrant Pink */
+                        'accent-green': '#10B981', /* Vibrant Green */
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+        
+        // --- THREE.JS (3D CGI ART) INTEGRATION LOGIC ---
+        let scene, camera, renderer, object;
+        const initThree = () => {
+            const container = document.getElementById('threeContainer');
+            if (!container) return;
+
+            scene = new THREE.Scene();
+            
+            camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.z = 4; // Adjusted for a slightly closer, more imposing feel
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setClearColor(0x000000, 0); // Transparent background for canvas
+            container.appendChild(renderer.domElement);
+            renderer.domElement.id = 'threeCanvas';
+
+            // Object: A more complex, abstract shape (e.g., Icosahedron)
+            const geometry = new THREE.IcosahedronGeometry(2, 1); // Size 2, 1 subdivision
+            const material = new THREE.MeshPhongMaterial({ 
+                color: 0x6A11CB, // Purple base color
+                shininess: 150,
+                specular: 0xFFFFFF, // White specular highlight
+            });
+            object = new THREE.Mesh(geometry, material);
+            scene.add(object);
+
+            // Lighting: Soft, colorful ambient and directional lights
+            const ambientLight = new THREE.AmbientLight(0x404040, 1); 
+            scene.add(ambientLight);
+
+            const directionalLight1 = new THREE.DirectionalLight(0x2575FC, 2); // Blue light
+            directionalLight1.position.set(5, 5, 5).normalize();
+            scene.add(directionalLight1);
+
+            const directionalLight2 = new THREE.DirectionalLight(0xA855F7, 1.5); // Purple light
+            directionalLight2.position.set(-5, -5, -5).normalize();
+            scene.add(directionalLight2);
+            
+            window.addEventListener('resize', onWindowResize, false);
+        };
+
+        const onWindowResize = () => {
+            const container = document.getElementById('threeContainer');
+            if (!container) return;
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        };
+
+        const animate = () => {
+            requestAnimationFrame(animate);
+
+            // Animation logic - smoother, less frantic rotation
+            object.rotation.x += 0.002;
+            object.rotation.y += 0.003;
+            object.rotation.z += 0.001;
+
+            renderer.render(scene, camera);
+        };
+        
+        // --- GEMINI API INTEGRATION LOGIC (Retained) ---
+        const apiKey = ""; 
+        const model = "gemini-2.5-flash-preview-09-2025";
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+        // Utility function for exponential backoff retry
+        async function fetchWithRetry(url, options, maxRetries = 5) {
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok) {
+                        if (response.status === 429 && i < maxRetries - 1) {
+                            const delay = Math.pow(2, i) * 1000;
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                            continue;
+                        }
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response;
+                } catch (error) {
+                    if (i === maxRetries - 1) throw error; 
+                    const delay = Math.pow(2, i) * 1000;
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
+        }
+
+        async function generateProjectDescription() {
+            const detailsInput = document.getElementById('projectDetailsInput');
+            const outputDiv = document.getElementById('descriptionOutput');
+            const generateButton = document.getElementById('generateDescriptionButton');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+
+            const projectDetails = detailsInput.value.trim();
+
+            if (projectDetails === "") {
+                outputDiv.innerHTML = '<p class="text-accent-pink font-semibold">Please enter some details about your project first.</p>';
+                return;
+            }
+
+            // UI state change
+            outputDiv.innerHTML = '';
+            loadingIndicator.classList.remove('hidden');
+            generateButton.disabled = true;
+            generateButton.classList.add('opacity-50', 'cursor-not-allowed');
+
+            const systemPrompt = "You are a professional technical writer for a developer portfolio. Your task is to take a short, bulleted list of technical project details and turn it into a compelling, polished, and concise paragraph (max 4 sentences) suitable for a resume or portfolio. Focus on the impact and core technologies used.";
+            const userQuery = `Project Details: ${projectDetails}`;
+
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                systemInstruction: {
+                    parts: [{ text: systemPrompt }]
+                },
+            };
+
+            try {
+                const response = await fetchWithRetry(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                const generatedText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (generatedText) {
+                    outputDiv.innerHTML = `<div class="p-4 glassmorphic rounded-lg border-accent-blue/50">
+                        <h5 class="font-semibold text-text-light mb-2">Generated Description:</h5>
+                        <p class="text-text-light whitespace-pre-wrap">${generatedText}</p>
+                    </div>`;
+                } else {
+                    outputDiv.innerHTML = '<p class="text-accent-pink font-semibold">Sorry, I couldn\'t generate a description. Please try again with more specific details.</p>';
+                }
+
+            } catch (error) {
+                console.error("Gemini API Call Error:", error);
+                outputDiv.innerHTML = '<p class="text-accent-pink font-semibold">An API error occurred. Please check the console for details.</p>';
+            } finally {
+                // Reset UI state
+                loadingIndicator.classList.add('hidden');
+                generateButton.disabled = false;
+                generateButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        }
+        // --- END GEMINI API INTEGRATION LOGIC ---
+
+        window.onload = function () {
+            initThree();
+            animate();
+            // Initialize Lucide Icons after the DOM loads
+            lucide.createIcons();
+        }
+    </script>
+</head>
+
+<body class="bg-primary-dark text-text-light antialiased">
+
+    <!-- Header & Navigation --><header class="sticky top-0 z-50 glassmorphic backdrop-blur-lg shadow-lg shadow-accent-blue/10">
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <div class="text-xl font-bold gradient-text">Uday K. Chopra</div>
+            <div class="hidden md:flex space-x-8">
+                <a href="#about" class="text-text-light hover:text-accent-blue transition duration-200">About</a>
+                <a href="#skills" class="text-text-light hover:text-accent-blue transition duration-200">Skills</a>
+                <a href="#projects" class="text-text-light hover:text-accent-blue transition duration-200">Projects</a>
+                <a href="#assistant" class="text-text-light hover:text-accent-blue transition duration-200">Assistant <span class="text-accent-green">✨</span></a>
+                <a href="#contact" class="text-text-light hover:text-accent-blue transition duration-200">Contact</a>
+            </div>
+            <!-- Mobile Menu Button (Hamburger) --><button class="md:hidden p-2 rounded-lg hover:bg-white/10 transition duration-200" aria-label="Toggle navigation">
+                 <i data-lucide="menu" class="w-6 h-6 text-accent-blue"></i>
+            </button>
+        </nav>
+    </header>
+
+    <!-- Hero Section with 3D Canvas Container --><section id="hero" class="relative overflow-hidden h-[80vh] flex items-center justify-center">
+        <!-- 3D Canvas Container --><div id="threeContainer" class="absolute w-full h-full">
+            <!-- Three.js Canvas will be appended here --></div>
+
+        <!-- Hero Content --><div class="hero-content max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-text-light pt-20 pb-28 md:pt-32 md:pb-40">
+            <div class="space-y-6">
+                <p class="text-lg font-semibold tracking-wider uppercase text-accent-green">Innovate. Create. Develop.</p>
+                <h1 class="text-5xl sm:text-7xl lg:text-8xl font-extrabold leading-tight text-text-light">
+                    <span class="gradient-text">UDAY KUMAR CHOPRA</span>
+                </h1>
+                <h2 class="text-2xl sm:text-3xl font-light text-accent-blue">
+                    Passionate **Web & App Developer**
+                </h2>
+                <div class="pt-8">
+                    <a href="#projects" class="inline-flex items-center justify-center px-10 py-4 text-lg font-bold rounded-full text-white gradient-button">
+                        Explore My Work <i data-lucide="arrow-right" class="w-5 h-5 ml-3"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About & Education Section --><section id="about" class="py-20 border-t border-b border-white/10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h3 class="text-3xl font-bold text-center mb-12 gradient-text">About Me & Education</h3>
+            <div class="max-w-4xl mx-auto space-y-10">
+                <!-- Developer Summary Card --><div class="glassmorphic p-8 md:p-10 rounded-xl shadow-xl border-t-4 border-accent-blue">
+                    <p class="text-lg text-text-light leading-relaxed">
+                        I am a dedicated **Web and App Developer** with a focus on crafting efficient, scalable, and intuitive digital experiences. My journey in Computer Science Engineering fuels my passion for turning complex ideas into elegant code, always eager to embrace new technologies.
+                    </p>
+                </div>
+
+                <!-- Education Card --><div class="glassmorphic p-8 md:p-10 rounded-xl shadow-xl flex flex-col md:flex-row items-start space-y-4 md:space-y-0 md:space-x-6 border-t-4 border-accent-purple">
+                    <div class="flex-shrink-0 text-accent-purple">
+                        <i data-lucide="graduation-cap" class="w-10 h-10"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-semibold mb-2 text-accent-purple">B.Tech in Computer Science Engineering</h4>
+                        <p class="text-lg text-text-light">Prashanti Institute of Technology and Science, Ujjain</p>
+                        <p class="text-sm text-gray-400 mt-1">Pursuing a Bachelor of Technology degree with a strong foundation in core CSE principles, algorithms, and full-stack development.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Skills Section --><section id="skills" class="py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h3 class="text-3xl font-bold text-center mb-12 gradient-text">Technical Skills</h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Web Development Card --><div class="glassmorphic p-6 rounded-xl shadow-md hover:shadow-accent-blue/30 transition duration-300 border border-accent-blue/50">
+                    <i data-lucide="code" class="w-8 h-8 text-accent-blue mb-3"></i>
+                    <h4 class="text-xl font-semibold text-text-light mb-3">Web Development</h4>
+                    <ul class="space-y-2 text-gray-300 text-sm">
+                        <li class="flex items-center"><i data-lucide="chevron-right" class="w-4 h-4 text-accent-green mr-2"></i> JavaScript, TypeScript</li>
+                        <li class="flex items-center"><i data-lucide="chevron-right" class="w-4 h-4 text-accent-green mr-2"></i> React, Next.js, Vue.js</li>
+                        <li class="flex items-center"><i data-lucide="chevron-right" class="w-4 h-4 text-accent-green mr-2"></i> Node.js, Express, REST APIs</li>
+                        <li class="flex items-center"><i data-lucide="chevron-right" class="w-4 h-4 text-accent-green mr-2"></i> Tailwind CSS, Bootstrap</li>
+                    </ul>
+                </div>
+
+                <!-- App Development Card --><div class="glassmorphic p-6 rounded-xl shadow-md hover:shadow-accent-purple/30 transition duration-300 border border-accent-purple/50">
+                    <i data-lucide="smartphone" class="w-8 h-8 text-accent-purple mb-3"></i>
+                    <h4 class="text-xl font-semibold text-text-light mb-3">App Development</h4>
+                    <ul class="space-y-2 text-gray-300 text-sm">
+                        <li class="flex items-center"><i data-lucide="chevron-right" class="w-4 h-4 text-accent-green mr-2"></i> Flutter / Dart (Cross-platform)</li>
+                        <li class="flex items-center"><i data-lucide="chevron-right" class="w-4 h-4 text-accent-green mr-2"></i> Firebase / Firestore Integration</li>
+                        <li class="flex items-center"><i data-lucide="chevron-right" class="w-4 h-4 text-accent-green mr-2"></i> API integration and State Management</li>
+                        <li class="flex items-center"><i data-lucide="chevron-right" class="w-4 h-4 text-accent-green mr-2"></i> Mobile UI/UX Design principles</li>
+                    </ul>
+                </div>
+
+                <!-- Database & Tools Card --><div class="glassmorphic p-6 rounded-xl shadow-md hover:shadow-accent-pink/30 transition duration-300 border border-accent-pink/50">
+                    <i data-lucide="database" class="w-8 h-8 text-accent-pink mb-3"></i>
+                    <h4 class="text-xl font-semibold text-text-light mb-3">Database & Tools</h4>
+                    <ul class="space-y-2 text-gray-300 text-sm">
+                        <li class="flex items-center"><i data-lucide="chevron-right" class="w-4 h-4 text-accent-green mr-2"></i> SQL (PostgreSQL, MySQL)</li>
+                        <li class="flex items-center"><i data-lucide="chevron-right" class="w-4 h-4 text-accent-green mr-2"></i> MongoDB, NoSQL</li>
+                        <li class="flex items-center"><i data-lucide="chevron-right" class="w-4 h-4 text-accent-green mr-2"></i> Git / GitHub</li>
+                        <li class="flex items-center"><i data-lucide="chevron-right" class="w-4 h-4 text-accent-green mr-2"></i> VS Code, Docker (Basic)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Projects Section (Placeholder Content) --><section id="projects" class="py-20 bg-primary-dark border-t border-b border-white/10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h3 class="text-3xl font-bold text-center mb-12 gradient-text">Featured Projects</h3>
+            <p class="text-center text-gray-400 mb-10 max-w-2xl mx-auto">
+                Discover a selection of my key development projects, demonstrating diverse skills and impactful solutions.
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Project 1 --><div class="glassmorphic rounded-xl shadow-lg overflow-hidden transition duration-300 hover:shadow-accent-blue/40">
+                    <img src="https://placehold.co/600x400/2575FC/0A0A1F?text=Web+Platform" alt="Project Placeholder" class="w-full h-48 object-cover">
+                    <div class="p-6">
+                        <h4 class="text-xl font-semibold text-accent-blue mb-2">E-commerce Platform</h4>
+                        <p class="text-gray-300 text-sm mb-4">A robust full-stack e-commerce solution with secure user authentication and integrated payment gateways.</p>
+                        <div class="flex space-x-3 text-sm font-medium text-accent-green">
+                            <span>#React</span>
+                            <span>#NodeJS</span>
+                            <span>#MongoDB</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Project 2 --><div class="glassmorphic rounded-xl shadow-lg overflow-hidden transition duration-300 hover:shadow-accent-purple/40">
+                    <img src="https://placehold.co/600x400/A855F7/0A0A1F?text=Mobile+App" alt="Project Placeholder" class="w-full h-48 object-cover">
+                    <div class="p-6">
+                        <h4 class="text-xl font-semibold text-accent-purple mb-2">Location-Based Mobile App</h4>
+                        <p class="text-gray-300 text-sm mb-4">A dynamic Flutter application leveraging real-time location data and advanced mapping APIs.</p>
+                        <div class="flex space-x-3 text-sm font-medium text-accent-green">
+                            <span>#Flutter</span>
+                            <span>#Dart</span>
+                            <span>#Firebase</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Project 3 --><div class="glassmorphic rounded-xl shadow-lg overflow-hidden transition duration-300 hover:shadow-accent-pink/40">
+                    <img src="https://placehold.co/600x400/EC4899/0A0A1F?text=API+Service" alt="Project Placeholder" class="w-full h-48 object-cover">
+                    <div class="p-6">
+                        <h4 class="text-xl font-semibold text-accent-pink mb-2">Custom REST API</h4>
+                        <p class="text-gray-300 text-sm mb-4">Engineered a scalable and secure RESTful API for efficient data management and service integration.</p>
+                        <div class="flex space-x-3 text-sm font-medium text-accent-green">
+                            <span>#Express</span>
+                            <span>#PostgreSQL</span>
+                            <span>#APIDesign</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Project Documentation Assistant (Gemini Feature) --><section id="assistant" class="py-20">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h3 class="text-3xl font-bold text-center mb-6 gradient-text">
+                ✨ AI-Powered Project Assistant
+            </h3>
+            <p class="text-center text-lg text-gray-400 mb-10">
+                Let Gemini transform your raw project notes into compelling, professional portfolio descriptions.
+            </p>
+
+            <div class="glassmorphic p-8 rounded-xl shadow-2xl border-t-4 border-accent-green">
+                <label for="projectDetailsInput" class="block text-sm font-medium text-gray-300 mb-2">
+                    Enter technical details (e.g., features, technologies, impact):
+                </label>
+                <textarea id="projectDetailsInput" rows="4" class="w-full p-3 border-2 border-accent-green/50 bg-white/5 text-text-light rounded-lg focus:ring-accent-green focus:border-accent-green resize-none mb-4" placeholder="e.g., Developed a full-stack job board; Technologies: Next.js, Firebase Auth, Tailwind CSS; Key features: server-side rendering, user dashboards."></textarea>
+
+                <button id="generateDescriptionButton" onclick="generateProjectDescription()" class="w-full flex items-center justify-center px-6 py-3 text-base font-bold rounded-full text-white gradient-button">
+                    <i data-lucide="sparkles" class="w-5 h-5 mr-2"></i> Generate Description
+                </button>
+
+                <div id="loadingIndicator" class="hidden text-center mt-6">
+                    <div class="animate-spin inline-block w-6 h-6 border-[3px] border-current border-t-transparent text-accent-blue rounded-full" role="status">
+                        <span class="sr-only">Processing...</span>
+                    </div>
+                    <p class="text-sm text-gray-400 mt-2">Gemini is crafting your description...</p>
+                </div>
+
+                <div id="descriptionOutput" class="mt-8">
+                    <!-- Generated description will appear here --></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section --><section id="contact" class="py-20 border-t border-white/10">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h3 class="text-3xl font-bold text-center gradient-text mb-6">Let's Connect</h3>
+            <p class="text-lg text-gray-400 mb-12">
+                I'm actively seeking new challenges and collaborations. Reach out to discuss your next project!
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Email Card --><div class="glassmorphic p-6 rounded-xl shadow-xl hover:shadow-accent-blue/40 transition duration-300 border border-accent-blue/50">
+                    <i data-lucide="mail" class="w-8 h-8 text-accent-blue mx-auto mb-3"></i>
+                    <h4 class="text-xl font-semibold text-text-light mb-2">Email Me</h4>
+                    <p class="text-gray-400">Prefer email for detailed inquiries.</p>
+                    <a href="mailto:chopraudaykumar@gmail.com" class="text-accent-blue font-bold hover:underline mt-2 block break-all">
+                        chopraudaykumar@gmail.com
+                    </a>
+                </div>
+
+                <!-- Phone Card --><div class="glassmorphic p-6 rounded-xl shadow-xl hover:shadow-accent-purple/40 transition duration-300 border border-accent-purple/50">
+                    <i data-lucide="phone" class="w-8 h-8 text-accent-purple mx-auto mb-3"></i>
+                    <h4 class="text-xl font-semibold text-text-light mb-2">Call Me</h4>
+                    <p class="text-gray-400">Available during business hours (IST).</p>
+                    <a href="tel:+91-96911-69666" class="text-accent-purple font-bold hover:underline mt-2 block break-all">
+                        +91-96911-69666
+                    </a>
+                </div>
+            </div>
+
+            <!-- Optional: Link to a Resume/CV (Placeholder) --><div class="mt-16">
+                 <a href="#" class="inline-flex items-center justify-center px-8 py-3 text-base font-bold rounded-full text-white gradient-button">
+                    <i data-lucide="download" class="w-4 h-4 mr-2"></i> Download Resume
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer --><footer class="bg-primary-dark text-white/70 py-6">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm">
+            <p>&copy; 2025 Uday Kumar Chopra. All rights reserved.</p>
+            <p class="mt-1 text-gray-500">Crafted with passion and precision.</p>
+        </div>
+    </footer>
+
+</body>
+</html>
